@@ -1,10 +1,14 @@
 package com.abhishek.randomimage
 
+import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.swiperefreshlayout.widget.CircularProgressDrawable
 import com.abhishek.randomimage.databinding.ActivityMainBinding
 import com.abhishek.randomimage.utils.Utils
@@ -17,6 +21,9 @@ import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import javax.inject.Inject
 
 
@@ -27,6 +34,8 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var prefs: SharedPreferences
+
+    private lateinit var cachedImage: File
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,8 +58,26 @@ class MainActivity : AppCompatActivity() {
         if (!loadSeed.isNullOrEmpty()) {
             loadImage(loadSeed)
         }
+
+        cachedImage = File(getExternalFilesDir(null), "cached.png")
+
         binding.randomButton.setOnClickListener {
             loadImage()
+        }
+
+        binding.share.setOnClickListener {
+            // val builder = StrictMode.VmPolicy.Builder()
+            // StrictMode.setVmPolicy(builder.build())
+            val shareIntent = Intent()
+            shareIntent.action = Intent.ACTION_SEND
+
+            shareIntent.putExtra(
+                Intent.EXTRA_STREAM, FileProvider.getUriForFile(
+                    applicationContext, applicationContext.packageName + ".provider", cachedImage
+                )
+            )
+            shareIntent.type = "image/*"
+            startActivity(Intent.createChooser(shareIntent, "Image"))
         }
     }
 
@@ -72,6 +99,17 @@ class MainActivity : AppCompatActivity() {
                     isFirstResource: Boolean
                 ): Boolean {
                     prefs.edit().putString("seed", seed).apply()
+                    try {
+                        val stream = FileOutputStream(cachedImage)
+                        (resource as BitmapDrawable).bitmap.compress(
+                            Bitmap.CompressFormat.PNG,
+                            100,
+                            stream
+                        )
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+
                     return false
                 }
 
