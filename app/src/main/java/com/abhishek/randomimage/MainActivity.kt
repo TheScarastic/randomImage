@@ -38,7 +38,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cachedImage: File
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        var sharImage = false
         super.onCreate(savedInstanceState)
+
+        if (intent.getBooleanExtra("share_image", false)) {
+            sharImage = true
+        }
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -61,23 +66,16 @@ class MainActivity : AppCompatActivity() {
 
         cachedImage = File(getExternalFilesDir(null), "cached.png")
 
+        if (sharImage) {
+            shareIt()
+        }
+
         binding.randomButton.setOnClickListener {
             loadImage()
         }
 
         binding.share.setOnClickListener {
-            // val builder = StrictMode.VmPolicy.Builder()
-            // StrictMode.setVmPolicy(builder.build())
-            val shareIntent = Intent()
-            shareIntent.action = Intent.ACTION_SEND
-
-            shareIntent.putExtra(
-                Intent.EXTRA_STREAM, FileProvider.getUriForFile(
-                    applicationContext, applicationContext.packageName + ".provider", cachedImage
-                )
-            )
-            shareIntent.type = "image/*"
-            startActivity(Intent.createChooser(shareIntent, "Image"))
+            shareIt()
         }
     }
 
@@ -132,5 +130,20 @@ class MainActivity : AppCompatActivity() {
                 }
             })
             .into(binding.randomImage)
+    }
+
+    fun shareIt() {
+        // val builder = StrictMode.VmPolicy.Builder()
+        // StrictMode.setVmPolicy(builder.build())
+        val shareIntent = Intent()
+        shareIntent.action = Intent.ACTION_SEND
+
+        shareIntent.putExtra(
+            Intent.EXTRA_STREAM, FileProvider.getUriForFile(
+                applicationContext, applicationContext.packageName + ".provider", cachedImage
+            )
+        )
+        shareIntent.type = "image/*"
+        startActivity(Intent.createChooser(shareIntent, "Image"))
     }
 }
